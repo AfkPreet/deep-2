@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>寂 JI — Studio</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- ═══════════ TOP BAR ═══════════ -->
+  <header id="topbar">
+    <div class="brand"><span class="kanji">寂</span><span class="brand-name">JI</span></div>
+
+    <div class="transport">
+      <button id="btn-play" class="t-btn" title="Play (Space)">
+        <svg viewBox="0 0 16 16" width="14" height="14"><path d="M4 2 L13 8 L4 14 Z" fill="currentColor"/></svg>
+      </button>
+      <button id="btn-stop" class="t-btn" title="Stop">
+        <svg viewBox="0 0 16 16" width="14" height="14"><rect x="3" y="3" width="10" height="10" fill="currentColor"/></svg>
+      </button>
+      <div class="t-sep"></div>
+      <div class="bpm-box">
+        <input id="bpm" type="number" min="40" max="300" value="128">
+        <span class="bpm-label">BPM</span>
+      </div>
+      <div class="swing-box">
+        <input id="swing" type="range" min="0" max="100" value="0">
+        <span class="bpm-label">SWING</span>
+      </div>
+      <div class="t-sep"></div>
+      <div class="mode-switch">
+        <button id="mode-pat" class="mode-btn active" title="Loop current pattern">PAT</button>
+        <button id="mode-song" class="mode-btn" title="Play arrangement">SONG</button>
+      </div>
+      <div class="pos-display"><span id="pos-bar">1</span>.<span id="pos-beat">1</span>.<span id="pos-step">1</span></div>
+    </div>
+
+    <div class="topbar-right">
+      <span id="cpu-meter" class="dim-label"></span>
+      <button id="btn-save" class="txt-btn" title="Save project file">SAVE</button>
+      <button id="btn-open" class="txt-btn" title="Open project file">OPEN</button>
+      <button id="btn-export" class="txt-btn accent" title="Render arrangement to WAV">EXPORT WAV</button>
+    </div>
+  </header>
+
+  <!-- ═══════════ VIEW TABS ═══════════ -->
+  <nav id="viewtabs">
+    <button class="vtab active" data-view="rack">RACK</button>
+    <button class="vtab" data-view="piano">PIANO ROLL</button>
+    <button class="vtab" data-view="session">SESSION</button>
+    <button class="vtab" data-view="arrange">ARRANGE</button>
+    <button class="vtab" data-view="mixer">MIXER</button>
+    <div class="tab-spacer"></div>
+    <div id="pattern-selector">
+      <button id="pat-prev" class="txt-btn">‹</button>
+      <select id="pattern-select"></select>
+      <button id="pat-next" class="txt-btn">›</button>
+      <button id="pat-add" class="txt-btn" title="New pattern">＋</button>
+      <button id="pat-clone" class="txt-btn" title="Clone pattern">⧉</button>
+      <button id="pat-del" class="txt-btn" title="Delete pattern">✕</button>
+    </div>
+  </nav>
+
+  <!-- ═══════════ MAIN ═══════════ -->
+  <div id="main">
+
+    <!-- BROWSER SIDEBAR -->
+    <aside id="browser">
+      <div class="browser-head">BROWSER</div>
+      <div class="browser-section" id="browser-samples">
+        <div class="bsec-title">SAMPLES</div>
+        <div class="bsec-list" id="sample-list"></div>
+      </div>
+      <div class="browser-section">
+        <div class="bsec-title">PRESETS</div>
+        <div class="bsec-list" id="preset-list"></div>
+      </div>
+      <div class="browser-drop" id="drop-zone">drop audio files here</div>
+    </aside>
+
+    <!-- VIEWS -->
+    <div id="views">
+      <section id="view-rack" class="view active"></section>
+      <section id="view-piano" class="view">
+        <div id="pr-toolbar">
+          <select id="pr-channel"></select>
+          <select id="pr-snap">
+            <option value="1">1/16</option><option value="2">1/8</option>
+            <option value="4">1/4</option><option value="0.5">1/32</option>
+          </select>
+          <select id="pr-scale">
+            <option value="">no scale</option>
+            <option value="0,2,4,5,7,9,11">major</option>
+            <option value="0,2,3,5,7,8,10">minor</option>
+            <option value="0,3,5,7,10">min pentatonic</option>
+            <option value="0,2,4,7,9">maj pentatonic</option>
+            <option value="0,2,3,5,7,9,10">dorian</option>
+          </select>
+          <select id="pr-root">
+            <option>C</option><option>C#</option><option>D</option><option>D#</option><option>E</option><option>F</option>
+            <option>F#</option><option>G</option><option>G#</option><option>A</option><option>A#</option><option>B</option>
+          </select>
+          <span class="dim-label">draw: click-drag · move: drag · resize: right edge · delete: right-click · velocity: lane below</span>
+        </div>
+        <div id="pr-wrap"><canvas id="pr-canvas"></canvas></div>
+        <div id="pr-vel-wrap"><canvas id="pr-vel"></canvas></div>
+      </section>
+      <section id="view-session" class="view"></section>
+      <section id="view-arrange" class="view">
+        <div id="ar-toolbar">
+          <span class="dim-label">place: click-drag · move: drag · delete: right-click · pattern:</span>
+          <select id="ar-pattern"></select>
+          <div class="t-sep"></div>
+          <span class="dim-label">automation:</span>
+          <select id="ar-autotarget"></select>
+          <button id="ar-autoshow" class="txt-btn">SHOW LANE</button>
+        </div>
+        <div id="ar-wrap"><canvas id="ar-canvas"></canvas></div>
+      </section>
+      <section id="view-mixer" class="view"></section>
+    </div>
+  </div>
+
+  <!-- CHANNEL / INSTRUMENT EDITOR (modal panel) -->
+  <div id="editor-overlay" class="hidden">
+    <div id="editor-panel">
+      <div class="editor-head">
+        <input id="editor-name" type="text">
+        <span id="editor-type" class="dim-label"></span>
+        <button id="editor-close" class="txt-btn">CLOSE</button>
+      </div>
+      <div id="editor-body"></div>
+    </div>
+  </div>
+
+  <!-- FX EDITOR (modal panel) -->
+  <div id="fx-overlay" class="hidden">
+    <div id="fx-panel">
+      <div class="editor-head">
+        <span id="fx-title"></span>
+        <button id="fx-close" class="txt-btn">CLOSE</button>
+      </div>
+      <div id="fx-body"></div>
+    </div>
+  </div>
+
+  <footer id="statusbar"><span id="status-msg">寂 — press any pad, or hit space</span>
+    <span class="kbd-hint">Z–M keys play the selected channel</span>
+  </footer>
+</div>
+
+<input type="file" id="file-open" accept=".jiproj,.json" style="display:none">
+<input type="file" id="file-audio" accept="audio/*" multiple style="display:none">
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
