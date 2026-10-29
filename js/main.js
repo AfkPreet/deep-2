@@ -2,7 +2,7 @@
 // 寂 JI — app bootstrap & global wiring
 // ═══════════════════════════════════════════════
 
-import { defaultProject, defaultPattern, saveLocal, loadLocal, exportFile, importFile, currentPattern, uid } from './state.js';
+import { defaultProject, defaultPattern, saveLocal, loadLocal, exportFile, importFile, currentPattern, uid, deliverBlob } from './state.js';
 import { Engine, renderToWav, songLengthBars } from './engine.js';
 import { $, status } from './ui-common.js';
 import { RackView } from './ui-rack.js';
@@ -133,7 +133,7 @@ $('#pat-del').onclick = () => {
 };
 
 // ─── save / open / export ────────────────────
-$('#btn-save').onclick = () => { exportFile(app.project); status('project file downloaded'); };
+$('#btn-save').onclick = async () => { status(await exportFile(app.project)); };
 $('#btn-open').onclick = () => $('#file-open').click();
 $('#file-open').onchange = async e => {
   const f = e.target.files[0];
@@ -171,12 +171,8 @@ $('#btn-export').onclick = async () => {
   $('#btn-export').disabled = true;
   try {
     const blob = await renderToWav(app.project, app.engine.samples, bars);
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `${app.project.name || 'song'}.wav`;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-    status(`exported ${bars} bars to WAV`);
+    const msg = await deliverBlob(blob, `${app.project.name || 'song'}.wav`);
+    status(`rendered ${bars} bars — ${msg}`);
   } catch (err) {
     console.error(err);
     status('export failed: ' + err.message);

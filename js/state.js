@@ -98,13 +98,77 @@ export function loadLocal() {
   return null;
 }
 
-export function exportFile(project) {
-  const blob = new Blob([JSON.stringify(project, null, 1)], { type: 'application/json' });
+// ─── file delivery ───────────────────────────
+// In the claude.ai artifact viewer, direct <a download> is inert; the
+// `downloads` capability mediates saves there, with a restricted extension
+// allowlist (no .wav/.jiproj) — so we rename .jiproj → .json and wrap
+// .wav in a stored .zip. Everywhere else the plain anchor download runs.
+
+let CRC_T;
+function crc32(buf) {
+  if (!CRC_T) {
+    CRC_T = new Uint32Array(256);
+    for (let n = 0; n < 256; n++) {
+      let c = n;
+      for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1;
+      CRC_T[n] = c;
+    }
+  }
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < buf.length; i++) c = CRC_T[(c ^ buf[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+
+function zipSingle(innerName, bytes) {
+  // minimal ZIP container, stored (no compression)
+  const name = new TextEncoder().encode(innerName);
+  const crc = crc32(bytes);
+  const n = name.length, sz = bytes.length;
+  const local = new DataView(new ArrayBuffer(30));
+  local.setUint32(0, 0x04034b50, true); local.setUint16(4, 20, true);
+  local.setUint32(14, crc, true); local.setUint32(18, sz, true); local.setUint32(22, sz, true);
+  local.setUint16(26, n, true);
+  const central = new DataView(new ArrayBuffer(46));
+  central.setUint32(0, 0x02014b50, true); central.setUint16(4, 20, true); central.setUint16(6, 20, true);
+  central.setUint32(16, crc, true); central.setUint32(20, sz, true); central.setUint32(24, sz, true);
+  central.setUint16(28, n, true);
+  const cdOff = 30 + n + sz, cdSize = 46 + n;
+  const eocd = new DataView(new ArrayBuffer(22));
+  eocd.setUint32(0, 0x06054b50, true); eocd.setUint16(8, 1, true); eocd.setUint16(10, 1, true);
+  eocd.setUint32(12, cdSize, true); eocd.setUint32(16, cdOff, true);
+  return new Blob([local.buffer, name, bytes, central.buffer, name, eocd.buffer], { type: 'application/zip' });
+}
+
+export async function deliverBlob(blob, filename) {
+  if (window.claude?.use) {
+    try {
+      const dl = await window.claude.use('downloads');
+      if (dl) {
+        let data = blob, name = filename;
+        if (/\.jiproj$/i.test(name)) name = name.replace(/\.jiproj$/i, '.json');
+        if (/\.wav$/i.test(name)) {
+          data = zipSingle(name, new Uint8Array(await blob.arrayBuffer()));
+          name = name.replace(/\.wav$/i, '.zip');
+        }
+        await dl.save({ filename: name, data });
+        return `saved ${name}`;
+      }
+    } catch (e) {
+      if (e && e.code === 'declined') return 'save cancelled';
+      // anything else: fall through to the plain download
+    }
+  }
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `${project.name || 'project'}.jiproj`;
+  a.download = filename;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  return `downloaded ${filename}`;
+}
+
+export function exportFile(project) {
+  const blob = new Blob([JSON.stringify(project, null, 1)], { type: 'application/json' });
+  return deliverBlob(blob, `${project.name || 'project'}.jiproj`);
 }
 
 export function importFile(file) {
