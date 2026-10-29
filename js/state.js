@@ -60,6 +60,9 @@ export function defaultProject() {
   mixer.push(retA, retB);
   mixer[0].effects.push({ id: uid('fx'), type: 'limiter', params: {}, enabled: true });
 
+  const scenes = Array.from({ length: SESSION_SCENES }, (_, i) => ({ id: uid('sc'), name: `Scene ${i + 1}`, clips: {} }));
+  scenes[0].clips[0] = pat.id;   // demo: scene 1 ready to launch
+
   return {
     version: 1,
     name: 'untitled',
@@ -68,11 +71,11 @@ export function defaultProject() {
     channels,
     patterns: [pat],
     currentPattern: pat.id,
-    scenes: Array.from({ length: SESSION_SCENES }, (_, i) => ({ id: uid('sc'), name: `Scene ${i + 1}`, clips: {} })),
+    scenes,
     // scenes[i].clips[channelRackCol]  — session columns are "slots" 0..7 holding patternIds
     arrangement: {
       lanes: 8,
-      clips: [],   // {id, patternId, lane, start(bars), length(bars)}
+      clips: [{ id: uid('cl'), patternId: pat.id, lane: 0, start: 0, length: 4 }], // demo: 4 bars so SONG + EXPORT work immediately
       automation: [], // {target: 'mix.1.volume', points: [{bar, val}]}
     },
     mixer,       // [master, 1..NUM_MIXER, returnA, returnB]

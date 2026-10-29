@@ -21,6 +21,7 @@
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+button, .step, .sess-cell, .b-item, .mx-fx-slot, .vtab { transition: background .12s ease, border-color .12s ease, color .12s ease; }
 html, body { height: 100%; overflow: hidden; }
 body {
   background: var(--bg0);
@@ -235,6 +236,7 @@ input:focus, select:focus { border-color: var(--accent-dim); }
 .mx-fx-add { font-size: 9px; color: var(--ink2); cursor: pointer; text-align: center; padding: 2px; }
 .mx-fx-add:hover { color: var(--accent); }
 .mx-sends { display: flex; gap: 8px; }
+.mx-sends .knob-wrap { width: 34px; }
 .mx-fader-zone { flex: 1; display: flex; gap: 6px; align-items: stretch; min-height: 120px; }
 .mx-fader {
   width: 26px; background: var(--bg2); border-radius: var(--radius); position: relative; cursor: ns-resize;
